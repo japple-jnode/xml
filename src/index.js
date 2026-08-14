@@ -321,3 +321,25 @@ export function find(xml = '', fn, limit) {
     f(xml);
     return result;
 }
+
+// extract text cotent from xml
+export function extractText(xml = '') {
+    if (typeof xml === 'string') xml = parse(xml);
+    let result = '';
+
+    // the walker
+    function w(element) {
+        if (typeof element === 'string') {
+            result += element;
+            return;
+        }
+
+        if (Array.isArray(element?.content)) {
+            for (let e of element.content) w(e);
+        }
+    }
+
+    // walk and return
+    w(xml);
+    return result;
+}
