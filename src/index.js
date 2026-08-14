@@ -3,7 +3,8 @@
 
 Simple XML package for Node.js.
 
-by JustApple
+by JustApple - main logic and code
+      Gemini - performance analysis and suggestions
 */
 
 // some regexps
@@ -27,7 +28,7 @@ export function parse(xml = '', options = {}) {
 
     // config options
     // options.strict ??= true; // disable auto closing and more
-    // options.cleanUp ??= true; // trim and remove double white-spaces in text content automatically
+    options.trim ??= true; // trim text content automatically
     options.voidElements = Array.isArray(options.voidElements) ? new Set(options.voidElements) : options.voidElements; // void elements will close automatically
 
     // variables
@@ -45,6 +46,16 @@ export function parse(xml = '', options = {}) {
     function skipTill(regex) {
         const begin = i;
         while (true) {
+            if (i >= xml.length || checkChar(regex)) break;
+            else i++;
+        }
+        return i - begin;
+    }
+
+    // skip string in
+    function skipIn(regex) {
+        const begin = i;
+        while (true) {
             if (i < xml.length && checkChar(regex)) i++;
             else break;
         }
@@ -53,7 +64,7 @@ export function parse(xml = '', options = {}) {
 
     // move i to next non-space character
     function skipSpaces() {
-        return skipTill(SPACE_REGEX);
+        while (i < xml.length && xml.charCodeAt(i) <= 32) i++;
     }
 
     // collect string until
@@ -68,17 +79,36 @@ export function parse(xml = '', options = {}) {
 
     // collect element name
     function collectName() {
-        return collectTill(NAME_END_REGEX);
+        const begin = i;
+        while (i < xml.length) {
+            const code = xml.charCodeAt(i);
+            if (code <= 32 || code === 47 || code === 62) break; // spaces, `/` and `>`
+            i++;
+        }
+        return xml.slice(begin, i);
     }
 
     // collect attribute name
     function collectAttributeName() {
-        return collectTill(ATTRIBUTE_NAME_END_REGEX);
+        const begin = i;
+        while (i < xml.length) {
+            const code = xml.charCodeAt(i);
+            if (code <= 32 || code === 61 || code === 47 || code === 62) break; // spaces, `=`, `/` and `>`
+            i++;
+        }
+        return xml.slice(begin, i);
     }
 
     // collect string
     function collectString() {
-        return collectTill(STRING_END_REGEX);
+        const begin = i;
+        const nextQuote = xml.indexOf('"', i);
+        if (nextQuote === -1) {
+            i = xml.length;
+            return xml.slice(begin);
+        }
+        i = nextQuote;
+        return xml.slice(begin, nextQuote);
     }
 
     // collect attribute value
@@ -130,12 +160,37 @@ export function parse(xml = '', options = {}) {
         return attributes;
     }
 
+    // collect text
+    function collectText() {
+        const begin = i;
+        const nextBracket = xml.indexOf('<', i);
+        if (nextBracket === -1) {
+            i = xml.length;
+            return xml.slice(begin);
+        }
+        i = nextBracket;
+        return xml.slice(begin, nextBracket);
+    }
+
     // push self-closing or text elements without closing anything
     function pushElement(element) {
+        if (options.trim && typeof element == 'string') {
+            element = element.trim();
+            if (!element) return;
+        }
+
         if (openedElements.length > 0) {
-            openedElements[openedElements.length - 1].content.push(element);
+            const content = openedElements[openedElements.length - 1].content;
+
+            if (typeof element === 'string' && typeof content[content.length - 1] === 'string') { // merge string
+                content[content.length - 1] += element;
+            } else content.push(element);
         } else {
-            rootElement.content.push(element);
+            const content = rootElement.content;
+
+            if (typeof element === 'string' && typeof content[content.length - 1] === 'string') { // merge string
+                content[content.length - 1] += element;
+            } else content.push(element);
         }
     }
 
@@ -175,9 +230,11 @@ export function parse(xml = '', options = {}) {
                             break;
                         } else { // elements after it
                             // clone
-                            const clone = structuredClone(element);
-                            clone.content = [];
-                            clones.unshift(clone);
+                            clones.unshift({
+                                name: element.name,
+                                attributes: element.attributes,
+                                content: []
+                            });
 
                             // push
                             pushElement(element);
@@ -213,16 +270,15 @@ export function parse(xml = '', options = {}) {
 
                 continue;
             } else if (checkChar(COMMENT_REGEX)) { // comments, include bogus comments
-                skipTill(TAG_END_REGEX);
+                skipTill(TAG_END_REGEX); i++;
                 continue;
             } else { // view as text
-                i--;
+                pushElement(i - 1);
             }
         }
 
         // collect text
-        const text = collectTill(TEXT_END_REGEX);
-        pushElement(text);
+        pushElement(collectText());
     }
 
     // close all elements
@@ -232,8 +288,3 @@ export function parse(xml = '', options = {}) {
 
     return rootElement;
 }
-
-const EXAMPLE_XML = `
-
-`;
-console.log(JSON.stringify(parse(EXAMPLE_XML), null, 3));
