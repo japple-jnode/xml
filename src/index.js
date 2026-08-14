@@ -273,7 +273,7 @@ export function parse(xml = '', options = {}) {
                 skipTill(TAG_END_REGEX); i++;
                 continue;
             } else { // view as text
-                pushElement(i - 1);
+                pushElement(xml[i - 1]);
             }
         }
 
