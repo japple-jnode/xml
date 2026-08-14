@@ -1,0 +1,28 @@
+{
+  "name": "@jnode/xml",
+  "version": "0.0.0-beta",
+  "description": "Simple XML package for Node.js.",
+  "keywords": [
+    "xml",
+    "html",
+    "jnode"
+  ],
+  "homepage": "https://github.com/japple-jnode/xml#readme",
+  "bugs": {
+    "url": "https://github.com/japple-jnode/xml/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/japple-jnode/xml.git"
+  },
+  "license": "MIT",
+  "author": "JustApple",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Hello, XML.\""
+  }
+}
