@@ -1,6 +1,6 @@
 {
   "name": "@jnode/xml",
-  "version": "0.0.1-beta",
+  "version": "0.0.2-beta",
   "description": "Simple XML package for Node.js.",
   "keywords": [
     "xml",

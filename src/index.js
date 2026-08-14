@@ -295,7 +295,7 @@ export function find(xml = '', fn, limit) {
     if (typeof fn !== 'function') throw new Error('fn must be a function');
 
     const result = [];
-    const end = false;
+    let end = false;
 
     // the finder
     function f(element) {
