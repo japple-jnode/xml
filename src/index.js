@@ -288,3 +288,36 @@ export function parse(xml = '', options = {}) {
 
     return rootElement;
 }
+
+// find all matched elements
+export function find(xml = '', fn, limit) {
+    if (typeof xml === 'string') xml = parse(xml);
+    if (typeof fn !== 'function') throw new Error('fn must be a function');
+
+    const result = [];
+    const end = false;
+
+    // the finder
+    function f(element) {
+        if (typeof element !== 'object') return;
+
+        if (element.name !== null && fn(element)) {
+            result.push(element);
+            if (limit && result.length >= limit) {
+                end = true;
+                return;
+            }
+        }
+
+        if (Array.isArray(element.content)) {
+            for (let e of element.content) {
+                f(e);
+                if (end) return;
+            }
+        }
+    }
+
+    // find and return
+    f(xml);
+    return result;
+}
